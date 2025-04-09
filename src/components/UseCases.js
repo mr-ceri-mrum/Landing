@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FaInstagram, FaWhatsapp, FaComments, FaCalendarCheck } from 'react-icons/fa';
+import { FaInstagram, FaComments, FaCalendarCheck } from 'react-icons/fa';
 
 const useCases = [
   {
