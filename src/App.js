@@ -5,8 +5,8 @@
  * и управляет общей структурой страницы.
  */
 import React from 'react';
-import Header from './components/header';
-import Features from './components/features';
+import Header from './components/Header';
+import Features from './components/Features';
 import TargetAudience from './components/TargetAudience';
 import UseCases from './components/UseCases';
 import Demo from './components/Demo';
