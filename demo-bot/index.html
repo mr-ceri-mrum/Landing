@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-чат-бот Open Inference</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <!-- Chat header -->
+            <div class="chat-header">
+                <div class="ai-icon">
+                    <span>AI</span>
+                </div>
+                <h3>AI-чат-бот Open Inference</h3>
+                <button id="startDemoBtn" class="demo-button">Запустить демо</button>
+                <button id="replayDemoBtn" class="demo-button hidden">↻ Повторить</button>
+            </div>
+            
+            <!-- Chat messages -->
+            <div class="chat-messages" id="chatMessages">
+                <div id="emptyState" class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <p class="empty-title">Нажмите «Запустить демо», чтобы увидеть бота в действии</p>
+                    <p class="empty-subtitle">Мы покажем пример диалога с клиентом</p>
+                </div>
+            </div>
+            
+            <!-- Chat input -->
+            <form id="messageForm" class="chat-input">
+                <input type="text" id="userInput" placeholder="Напишите сообщение..." disabled>
+                <button type="submit" id="sendButton" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+        
+        <div class="cta-container">
+            <p class="cta-text">Хотите узнать больше о возможностях бота для вашего бизнеса?</p>
+            <a href="#contact" class="cta-button">Получить консультацию</a>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
