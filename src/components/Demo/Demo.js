@@ -10,10 +10,7 @@ import { motion } from 'framer-motion';
 import { Section, SectionTitle, Button } from '../UI';
 import { fadeIn } from '../../utils/animation';
 import { DEMO_BOT } from '../../constants';
-
-// Уникальный идентификатор для хранения сессии в localStorage
-const SESSION_STORAGE_KEY = 'ai_chatbot_demo_session';
-const USER_ID_KEY = 'ai_chatbot_user_id';
+import { SESSION_STORAGE_KEY, USER_ID_KEY, initializeTestData } from '../../utils/testData';
 
 const Demo = () => {
   // Состояние для хранения сообщений
@@ -32,6 +29,12 @@ const Demo = () => {
 
   // Инициализация компонента
   useEffect(() => {
+    // В режиме разработки можно инициализировать тестовые данные
+    // В продакшн это следует убрать или обернуть в process.env.NODE_ENV === 'development'
+    if (process.env.NODE_ENV === 'development') {
+      initializeTestData();
+    }
+    
     // Проверяем наличие сохраненных сообщений в localStorage
     const savedMessages = localStorage.getItem(SESSION_STORAGE_KEY);
     if (savedMessages) {
