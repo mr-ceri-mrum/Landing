@@ -1,16 +1,21 @@
 /**
- * Demo Component
+ * Chat Component
  * 
- * Интерактивный компонент для демонстрации работы AI-чат-бота.
- * Позволяет пользователю взаимодействовать с ботом через API.
- * Сохраняет историю сообщений в localStorage.
+ * Интерактивный компонент для общения с AI-чат-ботом.
+ * Отправляет запросы к API и отображает ответы.
+ * Сохраняет sessionId в localStorage для продолжения диалога.
  */
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Section, SectionTitle, Button } from '../UI';
 import { fadeIn } from '../../utils/animation';
-import { DEMO_BOT } from '../../constants';
-import { SESSION_STORAGE_KEY, USER_ID_KEY, initializeTestData } from '../../utils/testData';
+
+// API endpoint
+const API_URL = "https://n8n.bogdanna.com/webhook/79b905f5-ce6d-4cab-bcef-8d7b2f643f1d";
+
+// Ключи для localStorage
+const SESSION_ID_KEY = 'ai_chatbot_session_id';
+const CHAT_HISTORY_KEY = 'ai_chatbot_history';
 
 const Demo = () => {
   // Состояние для хранения сообщений
@@ -19,42 +24,34 @@ const Demo = () => {
   const [userInput, setUserInput] = useState('');
   // Состояние загрузки (ожидание ответа от API)
   const [isLoading, setIsLoading] = useState(false);
-  // Состояние демо (запущено или нет)
-  const [demoStarted, setDemoStarted] = useState(false);
-  // Идентификатор пользователя для API
-  const [userId, setUserId] = useState('');
+  // Состояние чата (запущен или нет)
+  const [chatStarted, setChatStarted] = useState(false);
+  // Идентификатор сессии для API
+  const [sessionId, setSessionId] = useState('');
   
   // Ref для автоматической прокрутки к последнему сообщению
   const messagesEndRef = useRef(null);
 
   // Инициализация компонента
   useEffect(() => {
-    // В режиме разработки можно инициализировать тестовые данные
-    // В продакшн это следует убрать или обернуть в process.env.NODE_ENV === 'development'
-    if (process.env.NODE_ENV === 'development') {
-      initializeTestData();
+    // Проверяем наличие сохраненного sessionId
+    const savedSessionId = localStorage.getItem(SESSION_ID_KEY);
+    if (savedSessionId) {
+      setSessionId(savedSessionId);
+      
+      // Загружаем историю чата, если она есть
+      const savedHistory = localStorage.getItem(CHAT_HISTORY_KEY);
+      if (savedHistory) {
+        setMessages(JSON.parse(savedHistory));
+        setChatStarted(true);
+      }
     }
-    
-    // Проверяем наличие сохраненных сообщений в localStorage
-    const savedMessages = localStorage.getItem(SESSION_STORAGE_KEY);
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
-      setDemoStarted(true);
-    }
-    
-    // Получаем или генерируем идентификатор пользователя
-    let user_id = localStorage.getItem(USER_ID_KEY);
-    if (!user_id) {
-      user_id = 'user_' + Math.random().toString(36).substring(2, 15);
-      localStorage.setItem(USER_ID_KEY, user_id);
-    }
-    setUserId(user_id);
   }, []);
 
   // Сохраняем сообщения в localStorage при изменении
   useEffect(() => {
     if (messages.length > 0) {
-      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(messages));
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
     }
   }, [messages]);
 
@@ -69,22 +66,29 @@ const Demo = () => {
   };
 
   /**
-   * Асинхронная функция для отправки сообщения к API
-   * @param {string} userMessage - Сообщение пользователя
-   * @returns {Promise<string>} - Ответ от AI
+   * Создает новую сессию и отправляет первое сообщение боту
    */
-  const sendMessageToAI = async (userMessage) => {
+  const startChat = async () => {
+    // Генерируем новый sessionId
+    const newSessionId = 'session_' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+    setSessionId(newSessionId);
+    localStorage.setItem(SESSION_ID_KEY, newSessionId);
+    
+    setChatStarted(true);
+    
+    // Добавляем индикатор загрузки
+    setIsLoading(true);
+    
     try {
-      setIsLoading(true);
-      
-      const response = await fetch("https://n8n.bogdanna.com/webhook/79b905f5-ce6d-4cab-bcef-8d7b2f643f1d", {
+      // Отправляем запрос к API для начала сессии
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          message: userMessage,
-          userId: userId,
+          message: "Начало диалога",
+          sessionId: newSessionId
         })
       });
       
@@ -93,7 +97,70 @@ const Demo = () => {
       }
       
       const data = await response.json();
-      console.log("AI response:", data);
+      
+      // Добавляем приветственное сообщение от бота
+      const welcomeMessage = {
+        sender: 'bot',
+        text: data.response || "Здравствуйте! Чем я могу вам помочь?",
+        timestamp: new Date().toISOString()
+      };
+      
+      setMessages([welcomeMessage]);
+      
+    } catch (err) {
+      console.error("Error starting chat:", err);
+      
+      // Если API недоступен, добавляем стандартное приветствие
+      const fallbackMessage = {
+        sender: 'bot',
+        text: "Здравствуйте! Я AI-чат-бот Open Inference. Чем могу помочь?",
+        timestamp: new Date().toISOString()
+      };
+      
+      setMessages([fallbackMessage]);
+      
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Начинает новый чат (очищает историю и создает новую сессию)
+   */
+  const startNewChat = () => {
+    // Очищаем состояние и localStorage
+    setMessages([]);
+    localStorage.removeItem(CHAT_HISTORY_KEY);
+    localStorage.removeItem(SESSION_ID_KEY);
+    
+    // Запускаем новый чат
+    startChat();
+  };
+
+  /**
+   * Отправляет сообщение пользователя к API и получает ответ
+   */
+  const sendMessageToAPI = async (userMessage) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          sessionId: sessionId
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API ответил с кодом: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("API response:", data);
       
       return data.response || "Извините, я не смог обработать ваш запрос.";
     } catch (err) {
@@ -104,34 +171,17 @@ const Demo = () => {
     }
   };
 
-  // Запуск демо
-  const startDemo = () => {
-    setDemoStarted(true);
-    
-    // Если нет сообщений, добавляем приветствие от бота
-    if (messages.length === 0) {
-      const initialMessage = {
-        sender: 'bot',
-        text: DEMO_BOT.GREETING,
-        timestamp: new Date().toISOString()
-      };
-      
-      setMessages([initialMessage]);
-    }
-  };
-
-  // Сброс демо (очистка истории)
-  const resetDemo = () => {
-    setMessages([]);
-    localStorage.removeItem(SESSION_STORAGE_KEY);
-    
-    // Добавляем снова приветственное сообщение
-    startDemo();
-  };
-
   // Обработка изменения поля ввода
   const handleInputChange = (e) => {
     setUserInput(e.target.value);
+  };
+
+  // Обработка нажатия Enter в поле ввода
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
   };
 
   // Обработка отправки сообщения пользователем
@@ -151,7 +201,7 @@ const Demo = () => {
     setUserInput('');
     
     // Получаем ответ от API
-    const aiResponse = await sendMessageToAI(userMessage.text);
+    const aiResponse = await sendMessageToAPI(userMessage.text);
     
     // Добавляем сообщение от бота
     const botMessage = {
@@ -167,7 +217,7 @@ const Demo = () => {
     <Section id="demo" background="white">
       <SectionTitle 
         title="Посмотрите бота в действии" 
-        subtitle="Попробуйте демо-версию AI-чат-бота прямо сейчас"
+        subtitle="Попробуйте AI-чат-бота прямо сейчас"
       />
       
       <div className="max-w-2xl mx-auto">
@@ -184,19 +234,19 @@ const Demo = () => {
               <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-3">
                 <span className="text-primary font-bold">AI</span>
               </div>
-              <h3 className="font-bold">{DEMO_BOT.NAME}</h3>
+              <h3 className="font-bold">AI-чат-бот Open Inference</h3>
             </div>
             <div>
-              {!demoStarted ? (
+              {!chatStarted ? (
                 <Button 
-                  onClick={startDemo}
+                  onClick={startChat}
                   variant="secondary"
                 >
                   Запустить демо
                 </Button>
               ) : (
                 <Button 
-                  onClick={resetDemo}
+                  onClick={startNewChat}
                   variant="secondary"
                 >
                   ↻ Новый диалог
@@ -207,7 +257,7 @@ const Demo = () => {
           
           {/* Область сообщений */}
           <div className="h-96 p-6 overflow-y-auto bg-gray-50">
-            {!demoStarted && (
+            {!chatStarted && (
               <div className="h-full flex flex-col items-center justify-center text-center text-gray-500">
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
@@ -224,7 +274,7 @@ const Demo = () => {
                   />
                 </svg>
                 <p className="text-lg font-medium">Нажмите «Запустить демо», чтобы увидеть бота в действии</p>
-                <p className="mt-2">Начните диалог с AI-чат-ботом</p>
+                <p className="mt-2">Мы покажем пример диалога с клиентом</p>
               </div>
             )}
             
@@ -271,14 +321,15 @@ const Demo = () => {
               className="flex-1 border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               value={userInput}
               onChange={handleInputChange}
-              disabled={!demoStarted || isLoading}
+              onKeyPress={handleKeyPress}
+              disabled={!chatStarted || isLoading}
             />
             <button
               type="submit"
               className={`bg-primary text-white px-4 py-2 rounded-r-lg ${
-                (!demoStarted || isLoading) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+                (!chatStarted || isLoading) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
               }`}
-              disabled={!demoStarted || isLoading}
+              disabled={!chatStarted || isLoading}
             >
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
