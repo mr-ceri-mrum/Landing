@@ -3,7 +3,7 @@
  * 
  * Интерактивный компонент для общения с AI-чат-ботом.
  * Отправляет запросы к API и отображает ответы.
- * Сохраняет sessionId в localStorage для продолжения диалога.
+ * Использует sessionId для сохранения контекста диалога.
  */
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -13,9 +13,8 @@ import { fadeIn } from '../../utils/animation';
 // API endpoint
 const API_URL = "https://n8n.bogdanna.com/webhook/79b905f5-ce6d-4cab-bcef-8d7b2f643f1d";
 
-// Ключи для localStorage
+// Ключ для sessionId в localStorage
 const SESSION_ID_KEY = 'ai_chatbot_session_id';
-const CHAT_HISTORY_KEY = 'ai_chatbot_history';
 
 const Demo = () => {
   // Состояние для хранения сообщений
@@ -38,22 +37,9 @@ const Demo = () => {
     const savedSessionId = localStorage.getItem(SESSION_ID_KEY);
     if (savedSessionId) {
       setSessionId(savedSessionId);
-      
-      // Загружаем историю чата, если она есть
-      const savedHistory = localStorage.getItem(CHAT_HISTORY_KEY);
-      if (savedHistory) {
-        setMessages(JSON.parse(savedHistory));
-        setChatStarted(true);
-      }
+      setChatStarted(true);
     }
   }, []);
-
-  // Сохраняем сообщения в localStorage при изменении
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
-    }
-  }, [messages]);
 
   // Прокрутка к последнему сообщению при добавлении новых
   useEffect(() => {
@@ -75,6 +61,7 @@ const Demo = () => {
     localStorage.setItem(SESSION_ID_KEY, newSessionId);
     
     setChatStarted(true);
+    setMessages([]); // Очищаем сообщения при новом старте
     
     // Добавляем индикатор загрузки
     setIsLoading(true);
@@ -110,14 +97,14 @@ const Demo = () => {
     } catch (err) {
       console.error("Error starting chat:", err);
       
-      // Если API недоступен, добавляем стандартное приветствие
-      const fallbackMessage = {
+      // Если API недоступен, добавляем сообщение об ошибке
+      const errorMessage = {
         sender: 'bot',
-        text: "Здравствуйте! Я AI-чат-бот Open Inference. Чем могу помочь?",
+        text: "Извините, в данный момент сервис недоступен. Пожалуйста, попробуйте позже.",
         timestamp: new Date().toISOString()
       };
       
-      setMessages([fallbackMessage]);
+      setMessages([errorMessage]);
       
     } finally {
       setIsLoading(false);
@@ -125,12 +112,10 @@ const Demo = () => {
   };
 
   /**
-   * Начинает новый чат (очищает историю и создает новую сессию)
+   * Начинает новый чат (создает новую сессию)
    */
   const startNewChat = () => {
-    // Очищаем состояние и localStorage
-    setMessages([]);
-    localStorage.removeItem(CHAT_HISTORY_KEY);
+    // Очищаем sessionId
     localStorage.removeItem(SESSION_ID_KEY);
     
     // Запускаем новый чат
@@ -274,7 +259,7 @@ const Demo = () => {
                   />
                 </svg>
                 <p className="text-lg font-medium">Нажмите «Запустить демо», чтобы увидеть бота в действии</p>
-                <p className="mt-2">Мы покажем пример диалога с клиентом</p>
+                <p className="mt-2">Задайте любой вопрос боту и получите ответ</p>
               </div>
             )}
             
