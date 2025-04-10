@@ -31,7 +31,7 @@ function App() {
         {/* Use Cases Section */}
         <UseCases />
         
-        {/* Demo Section */}
+        {/* Demo Section - обновлено с API интеграцией */}
         <Demo />
         
         {/* Testimonials Section */}
